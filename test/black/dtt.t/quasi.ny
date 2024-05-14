@@ -53,7 +53,23 @@ echo dp₁ .ungel p x y α
 ` very much like the representation of dp₁.
 dump dp₁
 dump dx₁
+{`
+Output:
+Act (Const dp₁, ) : Inst (Act (App (Act (App (Act (Const Gel, ), ?), ), ?), 1), ?)
+Act (Const dx₁, ) : Inst (Act (App (Act (App (Act (Const Gel, d), ?), 1), ?), 21), ?)
+`}
+
+` We can also compare `dp₁` to `dp₁ .ungel`
+dump dp₁ .ungel
+{`
+Output:
+Act (Field (Act (Const dp₁, ), ungel), ) : Pi (?, ?, ?)
+`}
 
 ` However, this complains!
 dump dx₁ .ungel
-quit
+{`
+Output:
+ ￫ error[E0800]
+ record type with a nonidentity degeneracy applied is no longer a record, hence has no field named ungel
+`}
