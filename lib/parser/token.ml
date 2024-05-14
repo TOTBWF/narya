@@ -28,6 +28,7 @@ type t =
   | Axiom
   | Def
   | And
+  | Quit
   | Echo
   | Match
   | Sig
@@ -158,6 +159,7 @@ let to_string = function
   | Axiom -> "axiom"
   | Def -> "def"
   | And -> "and"
+  | Quit -> "quit"
   | Echo -> "echo"
   | Match -> "match"
   | Sig -> "sig"

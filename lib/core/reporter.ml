@@ -128,6 +128,7 @@ module Code = struct
     | Locked_axiom : printable -> t
     | Hole_generated : ('b, 's) Meta.t * printable -> t
     | Open_holes : t
+    | Quit : t
 
   (** The default severity of messages with a particular message code. *)
   let default_severity : t -> Asai.Diagnostic.severity = function
@@ -221,6 +222,7 @@ module Code = struct
     | Locked_axiom _ -> Error
     | Hole_generated _ -> Info
     | Open_holes -> Error
+    | Quit -> Info
 
   (** A short, concise, ideally Google-able string representation for each message code. *)
   let short_code : t -> string = function
@@ -337,6 +339,7 @@ module Code = struct
     | Hole_generated _ -> "I0100"
     (* Debugging *)
     | Show _ -> "I9999"
+    | Quit -> "I9998"
 
   let rec default_text : t -> text = function
     | Parse_error -> text "parse error"
@@ -546,6 +549,7 @@ module Code = struct
     | Hole_generated (n, ty) ->
         textf "@[<v 0>hole %s generated:@,@,%a@]" (Meta.name n) pp_printed (print ty)
     | Open_holes -> text "There are open holes"
+    | Quit -> text "Goodbye!"
 end
 
 include Asai.StructuredReporter.Make (Code)

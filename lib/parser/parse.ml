@@ -602,6 +602,10 @@ module Parse_command = struct
            args;
          })
 
+  let quit =
+    let* ws = token Quit in
+    return (Command.Quit ws)
+
   let bof =
     let* ws = C.bof in
     return (Command.Bof ws)
@@ -611,7 +615,7 @@ module Parse_command = struct
     return Command.Eof
 
   let command : unit -> Command.t C.Basic.t =
-   fun () -> bof </> axiom </> def_and </> echo </> notation </> eof
+   fun () -> bof </> axiom </> def_and </> echo </> quit </> notation </> eof
 
   let command_or_echo : unit -> Command.t C.Basic.t =
    fun () ->
