@@ -512,6 +512,11 @@ module Parse_command = struct
     let* tm = C.term [] in
     return (Command.Echo { wsecho; tm })
 
+  let dump =
+    let* wsdump = token Dump in
+    let* tm = C.term [] in
+    return (Command.Dump { wsdump; tm })
+
   let tightness_and_name :
       (No.wrapped option * Whitespace.t list * Scope.Trie.path * Whitespace.t list) t =
     let* tloc, tight_or_name = located ident in
@@ -615,7 +620,7 @@ module Parse_command = struct
     return Command.Eof
 
   let command : unit -> Command.t C.Basic.t =
-   fun () -> bof </> axiom </> def_and </> echo </> quit </> notation </> eof
+   fun () -> bof </> axiom </> def_and </> echo </> dump </> quit </> notation </> eof
 
   let command_or_echo : unit -> Command.t C.Basic.t =
    fun () ->

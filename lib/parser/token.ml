@@ -30,6 +30,7 @@ type t =
   | And
   | Quit
   | Echo
+  | Dump
   | Match
   | Sig
   | Data
@@ -161,6 +162,7 @@ let to_string = function
   | And -> "and"
   | Quit -> "quit"
   | Echo -> "echo"
+  | Dump -> "dump"
   | Match -> "match"
   | Sig -> "sig"
   | Data -> "data"

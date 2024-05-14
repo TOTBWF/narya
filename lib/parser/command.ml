@@ -32,6 +32,7 @@ type t =
     }
   | Def of def list
   | Echo of { wsecho : Whitespace.t list; tm : observation }
+  | Dump of { wsdump : Whitespace.t list; tm : observation }
   | Notation : {
       fixity : ('left, 'tight, 'right) fixity;
       wsnotation : Whitespace.t list;
@@ -108,6 +109,17 @@ let execute : t -> unit = function
           let uty = unparse Names.empty bty Interval.entire Interval.entire in
           Format.printf "@[<v>%a@] : @[<v>%a@]@." (pp_term `None) (Term utm) (pp_term `None) (Term uty);
       | _ -> fatal (Nonsynthesizing "argument of echo"))
+  | Dump { tm = Term tm; _ } -> (
+      let rtm = process Varscope.empty tm in
+      match rtm.value with
+      | Synth stm ->
+        let ctm, ety = Check.synth Ctx.empty { value = stm; loc = rtm.loc } in
+        let etm = Norm.eval_term (Emp D.zero) ctm in
+        let btm = Readback.readback_at Ctx.empty etm ety in
+        let bty = Readback.readback_at Ctx.empty ety (Inst.universe D.zero) in
+        Format.printf "@[<v>%a@] : @[<v>%a@]@." Dump.term btm Dump.term bty;
+      | _ -> fatal (Nonsynthesizing "argument of dump"))
+
   | Notation { fixity; name; pattern; head; args; _ } ->
       let notation_name = "notation" :: name in
       if Option.is_some (Scope.lookup notation_name) then
@@ -242,6 +254,14 @@ let pp_command : formatter -> t -> Whitespace.t list =
       pp_term `None ppf (Term tm);
       pp_close_box ppf ();
       rest
+  | Dump { wsdump; tm = Term tm } ->
+    pp_open_hvbox ppf 2;
+    pp_tok ppf Dump;
+    pp_ws `Nobreak ppf wsdump;
+    let tm, rest = split_ending_whitespace tm in
+    pp_term `None ppf (Term tm);
+    pp_close_box ppf ();
+    rest
   | Notation
       {
         fixity;
