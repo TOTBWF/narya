@@ -527,7 +527,7 @@ let rec check :
       let ty = readback_val ctx ty in
       let termctx = readback_ctx ctx in
       Galaxy.add meta varscope termctx ty energy;
-      emit (Hole_generated (meta, Termctx.PHole (varscope, termctx, ty)));
+      emit ~severity:Warning (Hole_generated (meta, Termctx.PHole (varscope, termctx, ty)));
       Meta meta
 
 and check_data :
