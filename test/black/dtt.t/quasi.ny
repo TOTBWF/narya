@@ -30,7 +30,7 @@ def Maybe.rec (A X : Type) (x : X) (f : A → X) : Maybe A → X := [
 
 notation 5 coprod : A "+" B := coprod A B
 
-def coprod.rec (A B X : Type) (f : A → X) (g : B → X) : A + B → X := [
+def Coprod.rec (A B X : Type) (f : A → X) (g : B → X) : A + B → X := [
 | inl. a ↦ f a
 | inr. b ↦ g b
 ]
@@ -99,69 +99,58 @@ def Degen₁ (A : ASST) : ASST⁽ᵈ⁾ (Degen₀ A) ≔ [
 | .s ↦ sym (Degen₁⁽ᵈ⁾ A (A .s))
 ]
 
-def Cone (A : SST) : SST := [
+def Cocone (A : SST) : SST := [
 | .z ↦ Maybe (A .z)
 | .s ↦ [
-  | none. ↦ SST.const (Cone A) SST.⊥
-  | some. a ↦ Cone⁽ᵈ⁾ A (A .s a)
+  | none. ↦ SST.const (Cocone A) SST.⊥
+  | some. a ↦ Cocone⁽ᵈ⁾ A (A .s a)
   ]
 ]
 
-` Extend a displayed SST over `A` to a displayed SST over `Cone A` by extending
+` Extend a displayed SST over `A` to a displayed SST over `Cocone A` by extending
 ` with empty fibres.
-def Cone.extend (A : SST) (A' : SST⁽ᵈ⁾ A) : SST⁽ᵈ⁾ (Cone A) := [
+def Cocone.extend (A : SST) (A' : SST⁽ᵈ⁾ A) : SST⁽ᵈ⁾ (Cocone A) := [
 | .z ↦ Gel (Maybe (A .z)) (Maybe.rec (A .z) Type ⊥ (a ↦ A' .z a))
 | .s ↦ x x' ↦ match x [
-  | none. ↦ absurd (SST⁽ᵈᵈ⁾ (Cone A) (Cone.extend A A') (SST.const (Cone A) SST.⊥)) (x' .ungel)
-  | some. a ↦ sym (Cone.extend⁽ᵈ⁾ A (A .s a) A' (sym (A' .s a (x' .ungel))))
+  | none. ↦ absurd (SST⁽ᵈᵈ⁾ (Cocone A) (Cocone.extend A A') (SST.const (Cocone A) SST.⊥)) (x' .ungel)
+  | some. a ↦ sym (Cocone.extend⁽ᵈ⁾ A (A .s a) A' (sym (A' .s a (x' .ungel))))
   ]
 ]
 
-def Cone' (A : SST) : Maybe (A .z) → SST⁽ᵈ⁾ A := [
-| none. ↦ SST.const A A
-| some. a ↦ A .s a
+{`
+TODO:
+Given a mono (or hom, really), construct a type that says there are no maps into
+the image in the codomain (resp, no maps out).
+`}
+
+def Cocone.inc (A : SST) : Hom A (Cocone A) := [
+| .z ↦ a ↦ some. a
+| .s ↦ a ↦ Cocone.inc⁽ᵈ⁾ A (A .s a)
 ]
 
-def Glue (A : SST) (K : Maybe (A .z) → SST⁽ᵈ⁾ A) : SST := [
-| .z ↦ Maybe (A .z)
-| .s ↦ x ↦ ?
-` [
-`   | none. ↦ ?
-`   | some. a ↦ ?
-`   ]
+def Cocone.over
+  (A : SST) (a : A .z) :
+  Hom⁽ᵈ⁾ A (A .s a) (Cocone A) (Cocone.extend A (A .s a)) (Cocone.inc A) :=
+[
+| .z ↦ b α ↦ (ungel := ?)
+| .s ↦ b α ↦ ? `Cocone.over⁽ᵈ⁾ A (A .s a) b α
 ]
 
-` def Cool (A : SST) : SST := [
-` | .z ↦ Maybe (A .z)
-` | .s ↦ ?
-` ]
+def Join (A B : SST) : SST := [
+| .z ↦ A .z + B .z
+| .s ↦ [
+  | inl. a ↦ Join⁽ᵈ⁾ A (A .s a) B (SST.const B B)
+  | inr. b ↦ Join⁽ᵈ⁾
+  ]
+]
 
-` def Cone' (A : SST) : SST := [
-` | .z ↦ Maybe (A .z)
-` | .s ↦ [
-`   | none. ↦ SST.const (Cone' A) A
-`   | some. a ↦ [
-`     | .z ↦ Gel (Maybe (A .z)) (Maybe.rec (A .z) Type ⊥ (b ↦ A .s a .z b))
-`     | .s ↦ x x' ↦ match x [
-`       | none. ↦
-`         absurd (SST⁽ᵈᵈ⁾ (Cone' A) (Cone' A .s (some. a)) (SST.const (Cone' A) A)) (x' .ungel)
-`       | some. b ↦
-`         Cone'⁽ᵈᵈ⁾ A (A .s a) (A .s b) (A .s a .s b (x' .ungel))
-`         ` have x' .ungel : A .s a .z b
-`       ]
-`     ]
-`   ]
-` ]
-
-` and Cone'.extend (A : SST) (a : A .z) : SST⁽ᵈ⁾ (Cone' A) := [
-` | .z ↦ Gel (Maybe (A .z)) (Maybe.rec (A .z) Type ⊥ (b ↦ A .s a .z b))
-` | .s ↦ x x' ↦ match x [
-`   | none. ↦ absurd (SST⁽ᵈᵈ⁾ (Cone' A) (Cone'.extend A a) (SST.const (Cone' A) A)) (x' .ungel)
-`   | some. b ↦
-`     ` have x' .ungel : A .s a .z b
-`     Cone'.extend⁽ᵈ⁾ A (A .s a) b (x' .ungel)
-`   ]
-` ]
+def Join.extend (A B : SST) (B' : SST⁽ᵈ⁾ B) : SST⁽ᵈ⁾ (Join A B) := [
+| .z ↦ Gel (A .z + B .z) (Coprod.rec (A .z) (B .z) Type (_ ↦ ⊥) (b ↦ B' .z b))
+| .s ↦ x x' ↦ match x [
+  | inl. a ↦ ?
+  | inr. b ↦ ?
+  ]
+]
 
 
 {`
@@ -169,27 +158,27 @@ We need to invert the cone somehow.
 
 `}
 
-def Cone.rec
+def Cocone.rec
   (X Y : SST)
   (pt : Y .z)
   (f : Hom X Y)
   (g : Sec X (SST.pullback X Y f (Y .s pt)))
-  : Hom (Cone X) Y := [
+  : Hom (Cocone X) Y := [
   | .z ↦ [
     | none. ↦ pt
     | some. x ↦ f .z x
   ]
   | .s ↦ [
     | none. ↦ ?
-    ` Cone.rec⁽ᵈ⁾ X (X .s ?) Y ? pt ? f ? g ?
-    | some. x ↦ Cone.rec⁽ᵈ⁾ X (X .s x) Y (Y .s (f .z x)) pt (g .z x .ungel) f ? g ?
+    ` Cocone.rec⁽ᵈ⁾ X (X .s ?) Y ? pt ? f ? g ?
+    | some. x ↦ Cocone.rec⁽ᵈ⁾ X (X .s x) Y (Y .s (f .z x)) pt (g .z x .ungel) f ? g ?
   ]
 ]
 
 ` ` NOTE: These really want to be augmented...
 ` def Δ : Nat → SST := [
-` | zero. ↦ Cone SST.⊥
-` | succ. n ↦ Cone (Δ n)
+` | zero. ↦ Cocone SST.⊥
+` | succ. n ↦ Cocone (Δ n)
 ` ]
 
 ` Tests
@@ -230,7 +219,7 @@ axiom y : X .z
 axiom z : X .z
 axiom γ : X .s y .z z
 
-def K : SST := Cone X
+def K : SST := Cocone X
 
 def kx : K .z := none.
 def ky : K .z := some. y
