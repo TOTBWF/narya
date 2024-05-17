@@ -83,16 +83,36 @@ def SST.⊤ : SST := [
 | .s ↦ _ ↦ SST.⊤⁽ᵈ⁾
 ]
 
+def SST.⊥ : SST := [
+| .z ↦ ⊥
+| .s ↦ []
+]
 
 
 def Disc (X : Type) : SST := [
 | .z ↦ X
-| .s ↦ _ ↦ Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))
+| .s ↦ x ↦ SST.const (Disc X) SST.⊥ `Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))
 ]
 
-def SST.⊥ : SST := Disc ⊥
+def SST.¡² (A B : SST) (f : Hom A B) (B' : SST⁽ᵈ⁾ B) : Hom⁽ᵈ⁾ A (SST.const A SST.⊥) B B' f :=
+[
+| .z ↦ a ff ↦ absurd (B' .z (f .z a)) (ff .ungel)
+| .s ↦ a ff ↦
+  absurd
+    (Hom⁽ᵈᵈ⁾ A (SST.const A SST.⊥) (A .s a)
+         (sym (SST.const⁽ᵈ⁾ A (A .s a) SST.⊥ (SST.⊥ .s (ff .ungel)))) B B'
+         (B .s (f .z a))
+         (B' .s (f .z a) (absurd (B' .z (f .z a)) (ff .ungel))) f
+         (SST.¡² A B f B') (f .s a))
+    (ff .ungel)
+]
 
 def Δ₀ : SST := Disc ⊤
+
+def よ₀ (A : SST) (a : A .z) : Hom Δ₀ A := [
+| .z ↦ _ ↦ a
+| .s ↦ _ ↦ SST.¡² (Disc ⊤) A (よ₀ A a) (A .s a)
+]
 
 def Join (X : Type) (A : SST) (B : SST) : SST := [
 | .z ↦ (X × A .z) + B .z
@@ -102,41 +122,8 @@ def Join (X : Type) (A : SST) (B : SST) : SST := [
   ]
 ]
 
-` Mike defn, with optimized SST.const case on inl.
-def Cone (X : Type) (A : SST) : SST := [
-| .z ↦ X + A .z
-| .s ↦ [
-  | inl. x ↦ Cone⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)) A (SST.const A (Disc X))
-  | inr. a ↦ Cone⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)) A (A .s a)
-  ]
-]
-
-axiom A : SST
-axiom x : A .z
-axiom y : A .z
-axiom α : A .s x .z y
-
-def K : SST := Cone ⊤ A
-def k∞ : K .z := inl. ()
-def kx : K .z := inr. x
-def ky : K .z := inr. y
-def kα : K .s kx .z ky := inr. α
-
-def k∞x : K .s k∞ .z kx := inr. (ungel := ())
-def k∞y : K .s k∞ .z ky := inr. (ungel := ())
-
-
-
-`def Cone (X : Type) (A : SST) : SST := Join X (Disc X) A
-` def Cocone (X : Type) (A : SST) : SST := Join X A (Disc X)
-
-
-` def Disc.lift (X : Type) (A B : SST) (f : Hom A B) : Hom⁽ᵈ⁾ A (SST.const A (Disc X)) B (SST.const B (Disc X)) f :=
-` [
-` | .z ↦ a x ↦ (ungel := x .ungel)
-` | .s ↦ a x ↦ sym (Disc.lift⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)) A (A .s a) B (B .s (f .z a)) f (f .s a))
-` ]
-
+def Cone (A : SST) : SST := Join ⊤ Δ₀ A
+def Cocone (A : SST) : SST := Join ⊤ A Δ₀
 
 def Join.rec
   (X : Type) (A B T : SST)
@@ -157,113 +144,45 @@ def Join.rec
       T (T .s (f .z (xa .snd)))
       f (f .s (xa .snd))
       g (s xa)
-      s (xa' ff ↦ ?)
+      s (xa' ff ↦
+        absurd
+          (Hom⁽ᵈᵈ⁾
+            B (SST.const B (Disc X)) (SST.const B (Disc X))
+            (SST.const⁽ᵈ⁾ B (SST.const B (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))))
+            T (T .s (f .z (xa .snd))) (T .s (f .z (xa' .snd)))
+            (T .s (f .z (xa .snd)) .s (f .z (xa' .snd)) (f .s (xa .snd) .z (xa' .snd) (ff .snd)))
+            g (s xa) (s xa'))
+        (ff .fst .ungel))
   | inr. b ↦
     Join.rec⁽ᵈ⁾
       X (SGel X (_ ↦ ⊥))
       A (SST.const A SST.⊥)
       B (B .s b)
       T (T .s (g .z b))
-      f ?
+      f (SST.¡² A T f (T .s (g .z b)))
       g (g .s b)
-      s ?
+      s (xa' ff ↦
+        absurd
+          (Hom⁽ᵈᵈ⁾ B (B .s b) (SST.const B (Disc X))
+           (SST.const⁽ᵈ⁾ B (B .s b) (Disc X) (Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)))) T
+         (T .s (g .z b)) (T .s (f .z (xa' .snd)))
+         (T .s (g .z b) .s (f .z (xa' .snd))
+            (absurd (T .s (g .z b) .z (f .z (xa' .snd))) (ff .snd .ungel))) g
+         (g .s b) (s xa'))
+        (ff .fst .ungel))
   ]
 ]
 
-` def Cone.rec
-`   (X : Type) (A B : SST)
-`   (f : Hom A B) (pt : X → B .z)
-`   (s : (x : X) → Hom⁽ᵈ⁾ A (SST.const A (Disc X)) B (B .s (pt x)) f)
-`   : Hom (Cone X A) B :=
-` [
-` | .z ↦ [
-`   | inl. x ↦ pt x
-`   | inr. a ↦ f .z a
-`   ]
-` | .s ↦ [
-`   | inl. x ↦
-`     Cone.rec⁽ᵈ⁾
-`       X (SGel X (_ ↦ ⊥))
-`       A (SST.const A (Disc X))
-`       B (B .s (pt x))
-`       f (s x)
-`       pt (x' ff ↦ absurd (B .s (pt x) .z (pt x')) (ff .ungel))
-`       ` lol, lmao, etc
-`       s (x' ff ↦
-`         absurd
-`           (Hom⁽ᵈᵈ⁾ A
-`             (SST.const A (Disc X))
-`             (SST.const A (Disc X))
-`             (SST.const⁽ᵈ⁾ A (SST.const A (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))))
-`             B (B .s (pt x)) (B .s (pt x'))
-`             (B .s (pt x) .s (pt x') (absurd (B .s (pt x) .z (pt x')) (ff .ungel))) f (s x) (s x'))
-`             (ff .ungel))
-`   | inr. a ↦
-`     Cone.rec⁽ᵈ⁾
-`       X (SGel X (_ ↦ ⊥))
-`       A (A .s a)
-`       B (B .s (f .z a))
-`       f (f .s a)
-`       pt (x ff ↦ absurd (B .s (f .z a) .z (pt x)) (ff .ungel))
-`       s (x ff ↦ ?
-`         ` absurd
-`         `   ()
-`         `   (ff .ungel)
-`           )
-`     ` Cone.rec⁽ᵈ⁾
-`     `   A (A .s a)
-`     `   X ? `(SST.const A SST.⊥)
-`     `   f ?
-`     `   pt ?
-`   ]
-` ]
+def Cone.rec
+  (A B : SST)
+  (f : Hom A B) (pt : B .z)
+  (s : Hom⁽ᵈ⁾ A (SST.const A Δ₀) B (B .s pt) f)
+  : Hom (Cone A) B
+  := Join.rec ⊤ Δ₀ A B (よ₀ B pt) f (_ ↦ s)
 
-` def Join.rec
-`   (A B X : SST)
-`   (f : Hom A X) (g : Hom B X)
-`   `(s : (a : A .z) → Sec B (SST.pullback B X g (X .s (f .z a))))
-`   : Hom (Join A B) X :=
-` [
-` | .z ↦ [
-`   | inl. a ↦ f .z a
-`   | inr. b ↦ g .z b
-`   ]
-` | .s ↦ [
-`   | inl. a ↦
-`     Join.rec⁽ᵈ⁾
-`       A (A .s a)
-`       B (SST.const B SST.⊤)
-`       X (X .s (f .z a))
-`       f (f .s a)
-`       g ?
-`       s ?`(a' α ↦ s a .s ?)
-`       `((SST.pullback B X g (X .s (f .z a)))) `(X .s (f .z a))
-`   | inr. b ↦
-`     Join.rec⁽ᵈ⁾
-`       A (SST.const A SST.⊥)
-`       B (B .s b)
-`       X (X .s (g .z b))
-`       f ?
-`       g (g .s b)
-`       ? ?
-`   ]
-` ]
-` axiom A : SST
-` axiom x : A .z
-` axiom y : A .z
-` axiom α : A .s x .z y
-
-` def K : SST := Cone ⊤ A
-` def k∞ : K .z := inl. ()
-` def kx : K .z := inr. x
-` def ky : K .z := inr. y
-` def kα : K .s kx .z ky := inr. α
-
-` def k∞x : K .s k∞ .z kx := inr. (ungel := ())
-` def k∞y : K .s k∞ .z ky := inr. (ungel := ())
-
-` ` Obviously true, but annoying to provide arguments
-` def k∞α : K .s k∞ .s kx k∞x .z ky k∞y kα :=
-`   inr. (sym (SGel.intro⁽ᵈ⁾ ? ? ? ? ? ? ? ?))
-`   `(sym (? : SST.const⁽ᵈ⁾ A (A .s x) SST.⊤ SST.⊤⁽ᵈ⁾ .z y α (ungel := ())))
-
+def Cocone.rec
+  (A B : SST)
+  (f : Hom A B) (pt : B .z)
+  (s : (a : A .z) → Hom⁽ᵈ⁾ Δ₀ (SST.const Δ₀ Δ₀) B (B .s (f .z a)) (よ₀ B pt))
+  : Hom (Cocone A) B
+  := Join.rec ⊤ A Δ₀ B f (よ₀ B pt) (a ↦ s (a .snd))
