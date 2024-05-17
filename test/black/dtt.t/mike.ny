@@ -39,9 +39,9 @@ def Coprod.rec (A B X : Type) (f : A → X) (g : B → X) : A + B → X := [
 | inr. b ↦ g b
 ]
 ` The "synthetic" gel operation; classifies `Type⁽ᵈ⁾ A` via a map into the universe.
-def SGel (A : Type) : (A → Type) → Type⁽ᵈ⁾ A := A' ↦ sig x ↦ (ungel : A' x)
+def Gel (A : Type) : (A → Type) → Type⁽ᵈ⁾ A := A' ↦ sig x ↦ (ungel : A' x)
 
-def SGel.intro (A : Type) (A' : A → Type) (x : A) (x' : A' x) : SGel A A' x :=
+def Gel.intro (A : Type) (A' : A → Type) (x : A) (x' : A' x) : Gel A A' x :=
   (ungel := x')
 
 def SGel²
@@ -65,12 +65,12 @@ def Sec (X : SST) (Y : SST⁽ᵈ⁾ X) : Type := codata [
 ]
 
 def SST.const (X Y : SST) : SST⁽ᵈ⁾ X := [
-| .z ↦ SGel (X .z) (x ↦ Y .z) `sig _ ↦ ( ungel : Y .z )
+| .z ↦ Gel (X .z) (x ↦ Y .z) `sig _ ↦ ( ungel : Y .z )
 | .s ↦ x y ↦ sym (SST.const⁽ᵈ⁾ X (X .s x) Y (Y .s (y .ungel)))
 ]
 
 def SST.pullback (X Y : SST) (f : Hom X Y) (Y' : SST⁽ᵈ⁾ Y) : SST⁽ᵈ⁾ X := [
-| .z ↦ SGel (X .z) (x ↦ Y' .z (f .z x))
+| .z ↦ Gel (X .z) (x ↦ Y' .z (f .z x))
 | .s ↦ x x' ↦
   sym (SST.pullback⁽ᵈ⁾ X (X .s x)
     Y (Y .s (f .z x))
@@ -91,7 +91,7 @@ def SST.⊥ : SST := [
 
 def Disc (X : Type) : SST := [
 | .z ↦ X
-| .s ↦ x ↦ SST.const (Disc X) SST.⊥ `Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))
+| .s ↦ x ↦ SST.const (Disc X) SST.⊥ `Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥))
 ]
 
 def SST.¡² (A B : SST) (f : Hom A B) (B' : SST⁽ᵈ⁾ B) : Hom⁽ᵈ⁾ A (SST.const A SST.⊥) B B' f :=
@@ -117,8 +117,8 @@ def よ₀ (A : SST) (a : A .z) : Hom Δ₀ A := [
 def Join (X : Type) (A : SST) (B : SST) : SST := [
 | .z ↦ (X × A .z) + B .z
 | .s ↦ [
-  | inl. xa ↦ Join⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)) A (A .s (xa .snd)) B (SST.const B (Disc X))
-  | inr. b ↦ Join⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)) A (SST.const A SST.⊥) B (B .s b)
+  | inl. xa ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (A .s (xa .snd)) B (SST.const B (Disc X))
+  | inr. b ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (SST.const A SST.⊥) B (B .s b)
   ]
 ]
 
@@ -138,7 +138,7 @@ def Join.rec
 | .s ↦ [
   | inl. xa ↦
     Join.rec⁽ᵈ⁾
-      X (SGel X (_ ↦ ⊥))
+      X (Gel X (_ ↦ ⊥))
       A (A .s (xa .snd))
       B (SST.const B (Disc X))
       T (T .s (f .z (xa .snd)))
@@ -148,14 +148,14 @@ def Join.rec
         absurd
           (Hom⁽ᵈᵈ⁾
             B (SST.const B (Disc X)) (SST.const B (Disc X))
-            (SST.const⁽ᵈ⁾ B (SST.const B (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥))))
+            (SST.const⁽ᵈ⁾ B (SST.const B (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥))))
             T (T .s (f .z (xa .snd))) (T .s (f .z (xa' .snd)))
             (T .s (f .z (xa .snd)) .s (f .z (xa' .snd)) (f .s (xa .snd) .z (xa' .snd) (ff .snd)))
             g (s xa) (s xa'))
         (ff .fst .ungel))
   | inr. b ↦
     Join.rec⁽ᵈ⁾
-      X (SGel X (_ ↦ ⊥))
+      X (Gel X (_ ↦ ⊥))
       A (SST.const A SST.⊥)
       B (B .s b)
       T (T .s (g .z b))
@@ -164,7 +164,7 @@ def Join.rec
       s (xa' ff ↦
         absurd
           (Hom⁽ᵈᵈ⁾ B (B .s b) (SST.const B (Disc X))
-           (SST.const⁽ᵈ⁾ B (B .s b) (Disc X) (Disc⁽ᵈ⁾ X (SGel X (_ ↦ ⊥)))) T
+           (SST.const⁽ᵈ⁾ B (B .s b) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)))) T
          (T .s (g .z b)) (T .s (f .z (xa' .snd)))
          (T .s (g .z b) .s (f .z (xa' .snd))
             (absurd (T .s (g .z b) .z (f .z (xa' .snd))) (ff .snd .ungel))) g
@@ -186,3 +186,33 @@ def Cocone.rec
   (s : (a : A .z) → Hom⁽ᵈ⁾ Δ₀ (SST.const Δ₀ Δ₀) B (B .s (f .z a)) (よ₀ B pt))
   : Hom (Cocone A) B
   := Join.rec ⊤ A Δ₀ B f (よ₀ B pt) (a ↦ s (a .snd))
+
+` The displayed SST of data over `a`.
+def SST.over (A : SST) (a : A .z) : SST⁽ᵈ⁾ A := [
+| .z ↦ Gel (A .z) (b ↦ A .s b .z a)
+| .s ↦ b α ↦ sym (SST.over⁽ᵈ⁾ A (A .s b) a (α .ungel))
+]
+
+` The opposite SST.
+def SST.op (A : SST) : SST := [
+| .z ↦ A .z
+| .s ↦ a ↦ SST.op⁽ᵈ⁾ A (SST.over A a)
+]
+
+
+` Tests:
+axiom A : SST
+axiom x : A .z
+axiom y : A .z
+axiom α : A .s x .z y
+axiom z : A .z
+axiom β : A .s x .z z
+axiom γ : A .s y .z z
+axiom f : A .s x .s y α .z z β γ
+
+def αᵒᵖ : SST.op A .s y .z x := (ungel := α)
+def βᵒᵖ : SST.op A .s z .z x := (ungel := β)
+def γᵒᵖ : SST.op A .s z .z y := (ungel := γ)
+
+def fᵒᵖ : SST.op A .s z .s y γᵒᵖ .z x βᵒᵖ αᵒᵖ :=
+  (ungel := sym ((ungel := f) : Gel⁽ᵈ⁾ (A .z) (A .s x .z) (b ↦ A .s b .z z) (y γ ↦ A .s x .s y γ .z z β) y α γᵒᵖ))
