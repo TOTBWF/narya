@@ -7,7 +7,13 @@ def absurd (A : Type) : ⊥ → A := []
 
 def Nat : Type := data [
 | zero. : Nat
-| succ. : Nat → Nat
+| suc. : Nat → Nat
+]
+
+` Degenerate a Nat into a Nat⁽ᵈ⁾
+def Nat.degen (n : Nat) : Nat⁽ᵈ⁾ n := match n [
+| zero. ↦ zero.
+| suc. n ↦ suc. (Nat.degen n)
 ]
 
 def Σ (A : Type) (B : A → Type) : Type :=
@@ -199,6 +205,27 @@ def SST.op (A : SST) : SST := [
 | .s ↦ a ↦ SST.op⁽ᵈ⁾ A (SST.over A a)
 ]
 
+` Representables.
+def Δₙ : Nat → SST := [
+| zero. ↦ Δ₀
+| suc. n ↦ Cone (Δₙ n)
+]
+
+def ○ (n : Nat) (A : SST) : Type := match n [
+| zero. ↦ ⊤
+| suc. n ↦
+  sig
+    (pt : A .z
+    , ∂a : ○ n A
+    , a : ● n A ∂a
+    , ∂a' : ○⁽ᵈ⁾ n (Nat.degen n) A (A .s pt) ∂a
+    )
+]
+
+and ● (n : Nat) (A : SST) (○a : ○ n A) : Type := match n [
+| zero. ↦ A .z
+| suc. n ↦ ●⁽ᵈ⁾ n (Nat.degen n) A (A .s (○a .pt)) (○a .∂a) (○a .∂a') (○a .a)
+]
 
 ` Tests:
 axiom A : SST
@@ -210,9 +237,18 @@ axiom β : A .s x .z z
 axiom γ : A .s y .z z
 axiom f : A .s x .s y α .z z β γ
 
-def αᵒᵖ : SST.op A .s y .z x := (ungel := α)
-def βᵒᵖ : SST.op A .s z .z x := (ungel := β)
-def γᵒᵖ : SST.op A .s z .z y := (ungel := γ)
+def ○xy : ○ 1 A := (pt := x, ∂a := (), a := y, ∂a' := ())
+def ●xy : ● 1 A ○xy := α
 
-def fᵒᵖ : SST.op A .s z .s y γᵒᵖ .z x βᵒᵖ αᵒᵖ :=
-  (ungel := sym ((ungel := f) : Gel⁽ᵈ⁾ (A .z) (A .s x .z) (b ↦ A .s b .z z) (y γ ↦ A .s x .s y γ .z z β) y α γᵒᵖ))
+def ○yz : ○ 1 A := (pt := y, ∂a := (), a := z, ∂a' := ())
+def ●yz : ● 1 A ○yz := γ
+
+def ○αβ : ○⁽ᵈ⁾ 1 1 A (A .s x) ○yz := (pt := α, ∂a := (), a:= β, ∂a' := ())
+def ●αβ : ●⁽ᵈ⁾ 1 1 A (A .s x) ○yz ○αβ ●yz := f
+
+def ○αβγ : ○ 2 A := (pt := x, ∂a := ○yz, a := ●yz, ∂a' := ○αβ)
+def ●αβγ : ● 2 A ○αβγ := ●αβ
+
+` Inline definition of all of the above data. Note the ordering!
+def ○αβγ' : ○ 2 A := (x, (y, (), z, ()), γ, (α, (), β, ()))
+def ●αβγ' : ● 2 A ○αβγ := f
