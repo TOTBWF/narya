@@ -23,6 +23,28 @@ def Nat.degen (n : Nat) : Nat⁽ᵈ⁾ n := match n [
 | suc. n ↦ suc. (Nat.degen n)
 ]
 
+` The biggest flamewar of all time; does induction proceed on the left, or on the right?
+` There is a clearly correct answer that we will let the reader decide.
+def Nat.add (n : Nat) : Nat → Nat := [
+| zero. ↦ n
+| suc. k ↦ suc. (Nat.add n k)
+]
+
+notation 5 Nat.add : n "+" k := Nat.add n k
+
+def Nat.lte (k n : Nat) : Type := match k [
+| zero. ↦ ⊤
+| suc. k ↦ match n [
+  | zero. ↦ ⊥
+  | suc. n ↦ Nat.lte k n
+  ]
+]
+
+def Nat.lt (k n : Nat) : Type := Nat.lte (suc. k) n
+
+notation 5 Nat.lte : k "≤" n := Nat.lte k n
+notation 5 Nat.lt : k "<" n := Nat.lt k n
+
 def Σ (A : Type) (B : A → Type) : Type :=
   sig (fst : A, snd : B fst)
 
@@ -38,10 +60,10 @@ def Coprod (A B : Type) : Type := data [
 | inr. : B → Coprod A B
 ]
 
-notation 5 Coprod : A "+" B := Coprod A B
+notation 5 Coprod : A "⊔" B := Coprod A B
 
 ` Recursor for coproducts.
-def Coprod.rec (A B X : Type) (f : A → X) (g : B → X) : A + B → X := [
+def Coprod.rec (A B X : Type) (f : A → X) (g : B → X) : A ⊔ B → X := [
 | inl. a ↦ f a
 | inr. b ↦ g b
 ]
@@ -147,7 +169,10 @@ def SST.¡² (A B : SST) (f : Hom A B) (B' : SST⁽ᵈ⁾ B) : Hom⁽ᵈ⁾ A (S
     (ff .ungel)
 ]
 
-
+def 𝒰 (X : Type) : SST := [
+| .z ↦ X → Type
+| .s ↦ X' ↦ 𝒰⁽ᵈ⁾ X (Gel X X')
+]
 
 def Disc (X : Type) : SST := [
 | .z ↦ X
@@ -172,15 +197,15 @@ def よ₀ (X : Type) (A : SST) (a : X → A .z) : Hom (Disc X) A := [
 ]
 
 def Join (X : Type) (A : SST) (B : SST) : SST := [
-| .z ↦ (X × A .z) + B .z
+| .z ↦ (X × A .z) ⊔ B .z
 | .s ↦ [
   | inl. xa ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (A .s (xa .snd)) B (SST.const B (Disc X))
   | inr. b ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (SST.const A SST.⊥) B (B .s b)
   ]
 ]
 
-def Cone (X : Type) (A : SST) : SST := Join X Δ₀ A
-def Cocone (X : Type) (A : SST) : SST := Join X A Δ₀
+def Cone (A : SST) : SST := Join ⊤ Δ₀ A
+def Cocone (A : SST) : SST := Join ⊤ A Δ₀
 
 def Join.rec
   (X : Type) (A B T : SST)
@@ -236,13 +261,13 @@ def Join.inr
   : Hom B (Join X A B)
   := ?
 
-def Cone.rec
-  (X : Type)
-  (A B : SST)
-  (f : Hom A B) (pt : B .z)
-  (s : Hom⁽ᵈ⁾ A (SST.const A (Disc X)) B (B .s pt) f)
-  : Hom (Cone X A) B
-  := Join.rec X Δ₀ A B (よ₀ ⊤ B (_ ↦ pt)) f (_ ↦ s)
+` def Cone.rec
+`   (X : Type)
+`   (A B : SST)
+`   (f : Hom A B) (pt : B .z)
+`   (s : Hom⁽ᵈ⁾ A (SST.const A (Disc X)) B (B .s pt) f)
+`   : Hom (Cone X A) B
+`   := Join.rec X Δ₀ A B (よ₀ ⊤ B (_ ↦ pt)) f (_ ↦ s)
 
 ` The displayed SST of data over `a`.
 def SST.over (A : SST) (a : A .z) : SST⁽ᵈ⁾ A := [
@@ -256,75 +281,101 @@ def SST.op (A : SST) : SST := [
 | .s ↦ a ↦ SST.op⁽ᵈ⁾ A (SST.over A a)
 ]
 
-` Representables.
+` Generalized representables.
 def Δ (X : Type) : Nat → SST := [
 | zero. ↦ Disc X
-| suc. n ↦ Cone ⊤ (Δ X n)
+| suc. n ↦ Cone (Δ X n)
 ]
 
-def Δ.gel (X : Type) (n : Nat)
-  : VHom (Δ X n) (SST.const (Δ X n) (Disc ⊤)) (Δ⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n))
-  := match n [
-| zero. ↦ Disc.gel X ⊤
-| suc. n ↦ [
-  | .z ↦ x x' ↦ match x [
-    | inl. tt ↦ inl. ((), ())
-    | inr. x ↦ inr. (Δ.gel X n .z x (ungel := ())) `(Δ.gel⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n) .z x ? ? ?)
-  ]
-  | .s ↦ x x' ↦ match x [
-    | inl. tt ↦ ?
-    ` NOTE: These all follow by a series of brutal `absurd` calls.
-    ` If we had a built-in "kinetic absurd" that (a) lived in check and (b) could work with terms,
-    ` then this headache could be avoided.
-    `
-    ` The other option is to build-in ⊥ as a built-in with an eliminator that was in "check".
-    ` [
-    `   | .z ↦ y y' z z' ↦ ? `z' .ungel .ungel
-    `   | .s ↦ y y' z z' ↦ ? `z' .ungel .ungel
-    ` ]
-    | inr. x ↦ ?
-    ` [
-    `   | .z ↦ y y' z z' ↦ ? `z' .ungel .ungel
-    `   | .s ↦ y y' z z' ↦ ? `z' .ungel .ungel
-    ` ]
-  ]
-  ]
-]
+
+
+
+
+
+
+` def Δ.gel (X : Type) (n : Nat)
+`   : VHom (Δ X n) (SST.const (Δ X n) (Disc ⊤)) (Δ⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n))
+`   := match n [
+` | zero. ↦ Disc.gel X ⊤
+` | suc. n ↦ [
+`   | .z ↦ x x' ↦ match x [
+`     | inl. tt ↦ inl. ((), ())
+`     | inr. x ↦ inr. (Δ.gel X n .z x (ungel := ())) `(Δ.gel⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n) .z x ? ? ?)
+`   ]
+`   | .s ↦ x x' ↦ match x [
+`     | inl. tt ↦ ?
+`     ` NOTE: These all follow by a series of brutal `absurd` calls.
+`     ` If we had a built-in "kinetic absurd" that (a) lived in check and (b) could work with terms,
+`     ` then this headache could be avoided.
+`     `
+`     ` The other option is to build-in ⊥ as a built-in with an eliminator that was in "check".
+`     ` [
+`     `   | .z ↦ y y' z z' ↦ ? `z' .ungel .ungel
+`     `   | .s ↦ y y' z z' ↦ ? `z' .ungel .ungel
+`     ` ]
+`     | inr. x ↦ ?
+`     ` [
+`     `   | .z ↦ y y' z z' ↦ ? `z' .ungel .ungel
+`     `   | .s ↦ y y' z z' ↦ ? `z' .ungel .ungel
+`     ` ]
+`   ]
+`   ]
+` ]
 
 ` The type of generalized n-dimensional boundaries in an SST `A`.
-def ○ (X : Type) (n : Nat) (A : SST) : Type := match n [
-| zero. ↦ X
+def ○ (n : Nat) (A : SST) : Type := match n [
+| zero. ↦ ⊤
 | suc. n ↦
   sig
     (pt : A .z
-    , ∂a : ○ X n A
-    , a : ● X n A ∂a
-    , ∂a' : ○⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n) A (A .s pt) ∂a
+    , ∂a : ○ n A
+    , a : ● n A ∂a
+    , ∂a' : ○⁽ᵈ⁾ n (Nat.degen n) A (A .s pt) ∂a
     )
 ]
 
 ` The type of generalized n-dimensional boundary fillers in an SST `A`.
-and ● (X : Type) (n : Nat) (A : SST) (○a : ○ X n A) : Type := match n [
-| zero. ↦ X → A .z
-| suc. n ↦ ●⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) n (Nat.degen n) A (A .s (○a .pt)) (○a .∂a) (○a .∂a') (○a .a)
+and ● (n : Nat) (A : SST) (○a : ○ n A) : Type := match n [
+| zero. ↦ A .z
+| suc. n ↦ ●⁽ᵈ⁾ n (Nat.degen n) A (A .s (○a .pt)) (○a .∂a) (○a .∂a') (○a .a)
 ]
 
-def 𝒰 (X : Type) : SST := [
-| .z ↦ X → Type
-| .s ↦ X' ↦ 𝒰⁽ᵈ⁾ X (Gel X X')
+` Horn (m + k + 1) k horns; tricky definition used to avoid having to deal with
+` indexed inductives.
+def Horn (m k : Nat) (A : SST) : Type := match k [
+| zero. ↦ sig (pt : A .z, ∂a : ○ m A, ∂a' : ○⁽ᵈ⁾ m (Nat.degen m) A (A .s pt) ∂a)
+| suc. k ↦
+  sig
+    (pt : A .z
+    , ∂a : ○ (suc. (m + k)) A
+    , a : ● (suc. (m + k)) A ∂a
+    , Λa : Horn⁽ᵈ⁾ m (Nat.degen m) k (Nat.degen k) A (A .s pt) (Horn.restrict m k A ∂a)
+    )
 ]
 
-` Analytic yoneda: a boundary and a filler yields a generalized simplex in A.
-def よ (X : Type) (A : SST) (n : Nat) (○a : ○ X n A) (a : ● X n A ○a) : Hom (Δ X n) A := match n [
-| zero. ↦ よ₀ X A a
-| suc. n ↦
-  Cone.rec ⊤ (Δ X n) A
-    (よ X A n (○a .∂a) (○a .a))
-    (○a .pt)
-    ?
-    ` This is morally correct, but a bit of golf with Hom.vcompr + Δ.gel is required.
-    `(よ⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) A (A .s (○a .pt)) n (Nat.degen n) (○a .∂a) (○a .∂a') (○a .a) a)
+and Horn.restrict (m k : Nat) (A : SST) (○a : ○ (suc. (m + k)) A) : Horn m k A := match k [
+| zero. ↦ (○a .pt, ○a .∂a, ○a .∂a')
+| suc. k ↦
+  (○a .pt
+  , ○a .∂a
+  , ○a .a
+  ` Requires that `suc. (Nat.degen (m + k))` is defeq
+  ` to `suc. (Nat.add⁽ᵈ⁾ m (Nat.degen m) k (Nat.degen k))`; this follows from the discreteness
+  ` of Nat, but we do not have a way of enforcing this!
+  , Horn.restrict⁽ᵈ⁾ m (Nat.degen m) k (Nat.degen k) A (A .s (○a .pt)) (○a .∂a) (○a .∂a'))
 ]
+
+` ` Analytic yoneda: a boundary and a filler yields a generalized simplex in A.
+` def よ (X : Type) (A : SST) (n : Nat) (○a : ○ X n A) (a : ● X n A ○a) : Hom (Δ X n) A := match n [
+` | zero. ↦ よ₀ X A a
+` | suc. n ↦
+`   Cone.rec ⊤ (Δ X n) A
+`     (よ X A n (○a .∂a) (○a .a))
+`     (○a .pt)
+`     ?
+`     ` This is morally correct, but a bit of golf with Hom.vcompr ⊔ Δ.gel is required.
+`     `(よ⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) A (A .s (○a .pt)) n (Nat.degen n) (○a .∂a) (○a .∂a') (○a .a) a)
+` ]
 
 ` axiom X : Type
 ` axiom x : X
