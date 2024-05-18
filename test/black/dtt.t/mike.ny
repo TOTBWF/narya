@@ -195,6 +195,8 @@ def SST.const (X Y : SST) : SST⁽ᵈ⁾ X := [
 | .s ↦ x y ↦ sym (SST.const⁽ᵈ⁾ X (X .s x) Y (Y .s (y .ungel)))
 ]
 
+def SST.replace (A X : SST) (a : A .z) (x : X .z) : SST.const A X .z a := (ungel := x)
+
 ` Pull back a displayed SST along a semisimplicial map.
 def SST.pullback (X Y : SST) (f : Hom X Y) (Y' : SST⁽ᵈ⁾ Y) : SST⁽ᵈ⁾ X := [
 | .z ↦ Gel (X .z) (x ↦ Y' .z (f .z x))
@@ -289,12 +291,7 @@ def Join (X : Type) (A : SST) (B : SST) : SST := [
   ` Weight the zero simplicies of A by X.
   (X × A .z) ⊔ B .z
 | .s ↦ [
-
-  ` FIXME: This case is super fishy! We shouldn't be using Gel along ⊥ here:
-  ` this leads to problems when we try to write the left inclusion.
-  ` Moreover, taking `SST.const B (Disc X)` can potentially mess up the higher
-  ` dimensional structure of `B`; it feels like we only want to weight the vertices here.
-  | inl. xa ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (A .s (xa .snd)) B (SST.const B (Disc X))
+  | inl. xa ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ X)) A (A .s (xa .snd)) B (SST.const B SST.⊤)
   | inr. b ↦ Join⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (SST.const A SST.⊥) B (B .s b)
   ]
 ]
@@ -306,53 +303,53 @@ def Cocone (A : SST) : SST := Join ⊤ A Δ₀
 ` Recursion principle for joins.
 ` To build a map out of `A ⋆ B` weighted by W, we need to give maps out of `A` and `B`,
 ` along with a map over `g` that builds 1-simplicies that agree with `f`.
-def Join.rec
-  (X : Type) (A B T : SST)
-  (f : Hom A T) (g : Hom B T)
-  (s : (xa : X × A .z) → Hom⁽ᵈ⁾ B (SST.const B (Disc X)) T (T .s (f .z (xa .snd))) g)
-  : Hom (Join X A B) T :=
-[
-| .z ↦ [
-  | inl. xa ↦ f .z (xa .snd)
-  | inr. b ↦ g .z b
-  ]
-| .s ↦ [
-  | inl. xa ↦
-    Join.rec⁽ᵈ⁾
-      X (Gel X (_ ↦ ⊥))
-      A (A .s (xa .snd))
-      B (SST.const B (Disc X))
-      T (T .s (f .z (xa .snd)))
-      f (f .s (xa .snd))
-      g (s xa)
-      s (xa' ff ↦
-        absurd
-          (Hom⁽ᵈᵈ⁾
-            B (SST.const B (Disc X)) (SST.const B (Disc X))
-            (SST.const⁽ᵈ⁾ B (SST.const B (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥))))
-            T (T .s (f .z (xa .snd))) (T .s (f .z (xa' .snd)))
-            (T .s (f .z (xa .snd)) .s (f .z (xa' .snd)) (f .s (xa .snd) .z (xa' .snd) (ff .snd)))
-            g (s xa) (s xa'))
-        (ff .fst .ungel))
-  | inr. b ↦
-    Join.rec⁽ᵈ⁾
-      X (Gel X (_ ↦ ⊥))
-      A (SST.const A SST.⊥)
-      B (B .s b)
-      T (T .s (g .z b))
-      f (SST.¡² A T f (T .s (g .z b)))
-      g (g .s b)
-      s (xa' ff ↦
-        absurd
-          (Hom⁽ᵈᵈ⁾ B (B .s b) (SST.const B (Disc X))
-           (SST.const⁽ᵈ⁾ B (B .s b) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)))) T
-         (T .s (g .z b)) (T .s (f .z (xa' .snd)))
-         (T .s (g .z b) .s (f .z (xa' .snd))
-            (absurd (T .s (g .z b) .z (f .z (xa' .snd))) (ff .snd .ungel))) g
-         (g .s b) (s xa'))
-        (ff .fst .ungel))
-  ]
-]
+` def Join.rec
+`   (X : Type) (A B T : SST)
+`   (f : Hom A T) (g : Hom B T)
+`   (s : (xa : X × A .z) → Hom⁽ᵈ⁾ B (SST.const B (Disc X)) T (T .s (f .z (xa .snd))) g)
+`   : Hom (Join X A B) T :=
+` [
+` | .z ↦ [
+`   | inl. xa ↦ f .z (xa .snd)
+`   | inr. b ↦ g .z b
+`   ]
+` | .s ↦ [
+`   | inl. xa ↦
+`     Join.rec⁽ᵈ⁾
+`       X (Gel X (_ ↦ ⊥))
+`       A (A .s (xa .snd))
+`       B (SST.const B (Disc X))
+`       T (T .s (f .z (xa .snd)))
+`       f (f .s (xa .snd))
+`       g (s xa)
+`       s (xa' ff ↦
+`         absurd
+`           (Hom⁽ᵈᵈ⁾
+`             B (SST.const B (Disc X)) (SST.const B (Disc X))
+`             (SST.const⁽ᵈ⁾ B (SST.const B (Disc X)) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥))))
+`             T (T .s (f .z (xa .snd))) (T .s (f .z (xa' .snd)))
+`             (T .s (f .z (xa .snd)) .s (f .z (xa' .snd)) (f .s (xa .snd) .z (xa' .snd) (ff .snd)))
+`             g (s xa) (s xa'))
+`         (ff .fst .ungel))
+`   | inr. b ↦
+`     Join.rec⁽ᵈ⁾
+`       X (Gel X (_ ↦ ⊥))
+`       A (SST.const A SST.⊥)
+`       B (B .s b)
+`       T (T .s (g .z b))
+`       f (SST.¡² A T f (T .s (g .z b)))
+`       g (g .s b)
+`       s (xa' ff ↦
+`         absurd
+`           (Hom⁽ᵈᵈ⁾ B (B .s b) (SST.const B (Disc X))
+`            (SST.const⁽ᵈ⁾ B (B .s b) (Disc X) (Disc⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)))) T
+`          (T .s (g .z b)) (T .s (f .z (xa' .snd)))
+`          (T .s (g .z b) .s (f .z (xa' .snd))
+`             (absurd (T .s (g .z b) .z (f .z (xa' .snd))) (ff .snd .ungel))) g
+`          (g .s b) (s xa'))
+`         (ff .fst .ungel))
+`   ]
+` ]
 
 ` The left inclusion into the weighted join.
 ` FIXME: At the moment, this is broken; requires some deeper thought into how the join is implemented.
@@ -364,7 +361,7 @@ def Join.inl
   :=
 [
 | .z ↦ a ↦ inl. (x, a)
-| .s ↦ a ↦ Join.inl⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (A .s a) B (SST.const B (Disc X)) x (ungel := ?)
+| .s ↦ a ↦ Join.inl⁽ᵈ⁾ X (Gel X (_ ↦ ⊤)) A (A .s a) B (SST.const B SST.⊤) x (ungel := ())
 ]
 
 ` The right inclusion into the join.
@@ -377,6 +374,12 @@ def Join.inr
 | .z ↦ b ↦ inr. b
 | .s ↦ b ↦ Join.inr⁽ᵈ⁾ X (Gel X (_ ↦ ⊥)) A (SST.const A SST.⊥) B (B .s b)
 ]
+
+def Join.attach
+  (X : Type)
+  (A B : SST)
+  (x : X) (a : A .z) (b : B .z)
+  : Join X A B .s (inl. (x, a)) .z (inr. b) := inr. (ungel := ())
 
 ` The displayed SST of data over `a`.
 def SST.over (A : SST) (a : A .z) : SST⁽ᵈ⁾ A := [
@@ -443,7 +446,7 @@ def Horn' (n k : Nat) (h : k ≤ suc. n) (A : SST) : Type := match n [
       )
   ]
 ]
-
+Gel (X 0) (_ ↦ ⊥)
 ` Restrict the boundary of an n-simplex to a horn.
 and Horn.restrict
   (n k : Nat)
@@ -561,15 +564,21 @@ def 𝟚₁ : Δ ⊤ 1 .z := inr. ()
 def 𝟚₀₁ : Δ ⊤ 1 .s 𝟚₀ .z 𝟚₁ := inr. (ungel := ())
 
 
-def 𝟛₀ : Δ ⊤ 2 .z := inl. ((), ())
+def 𝟛₀ : Δ ⊤ 2 .z := inl. ((), ()
 def 𝟛₁ : Δ ⊤ 2 .z := inr. 𝟚₀
 def 𝟛₂ : Δ ⊤ 2 .z := inr. 𝟚₁
-def 𝟛₀₁ : Δ ⊤ 2 .s 𝟛₀ .z 𝟛₁ := inr. (ungel := ())
+def 𝟛₀₁ : Δ ⊤ 2 .s 𝟛₀ .z 𝟛₁ := ? `Join.attach ⊤ 
+`inr. (ungel := ())
 def 𝟛₁₂ : Δ ⊤ 2 .s 𝟛₁ .z 𝟛₂ := inr. (inr. (ungel := ()))
 def 𝟛₀₂ : Δ ⊤ 2 .s 𝟛₀ .z 𝟛₂ := inr. (ungel := ())
 def 𝟛₀₁₂ : Δ ⊤ 2 .s 𝟛₀ .s 𝟛₁ 𝟛₀₁ .z 𝟛₂ 𝟛₀₂ 𝟛₁₂ :=
   inr. ?
 
+       ` sym
+       `   (Gel⁽ᵈ⁾ (⊤ × ⊤ ⊔ ⊤)
+       `      (Coprod⁽ᵈ⁾ (⊤ × ⊤) (Prod⁽ᵈ⁾ ⊤ (Gel ⊤ (_ ↦ ⊤)) ⊤ (Gel ⊤ (x ↦ ⊥)))
+       `         ⊤ (Gel ⊤ (x ↦ ⊤))) (x ↦ ⊤) (x ⤇ Gel ⊤ (x0 ↦ ⊥))) (inr. ())
+       `   (ungel ≔ ()) (inr. (ungel ≔ ()))
 
 ` Lesson learned:
 ` * Never, ever, ever use ⊤ when doing coinductive definitions.
